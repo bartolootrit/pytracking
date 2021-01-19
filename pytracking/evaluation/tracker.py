@@ -262,10 +262,9 @@ class Tracker:
         output_boxes = []
 
         cap = cv.VideoCapture(videofilepath)
+        self._fps = int(cap.get(cv.CAP_PROP_FPS))
         display_name = 'Display: ' + tracker.params.tracker_name
-        cv.namedWindow(display_name, cv.WINDOW_NORMAL | cv.WINDOW_KEEPRATIO)
-        cv.resizeWindow(display_name, 960, 720)
-        success, frame = cap.read()
+        success, frame = self._frame_get_video(cap)
         cv.imshow(display_name, frame)
 
         def _build_init_info(box):
@@ -295,7 +294,7 @@ class Tracker:
                 break
 
         while True:
-            ret, frame = cap.read()
+            ret, frame = self._frame_get_video(cap)
 
             if frame is None:
                 break
@@ -320,7 +319,7 @@ class Tracker:
 
             # Display the resulting frame
             cv.imshow(display_name, frame_disp)
-            key = cv.waitKey(1)
+            key = cv.waitKey(1) & 0xFF
             if key == ord('q'):
                 break
             elif key == ord('r'):
@@ -706,5 +705,8 @@ class Tracker:
         im = cv.imread(image_file)
         return cv.cvtColor(im, cv.COLOR_BGR2RGB)
 
+    def _frame_get_video(self, video_capture):
+        for _ in range(self._fps):
+            video_capture.grab()
 
-
+        return video_capture.read()
