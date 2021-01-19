@@ -14,7 +14,6 @@ from ltr.data.bounding_box_utils import masks_to_bboxes
 from pytracking.evaluation.multi_object_wrapper import MultiObjectWrapper
 from pathlib import Path
 import torch
-from google.colab.patches import cv2_imshow
 
 
 _tracker_disp_colors = {1: (0, 255, 0), 2: (0, 0, 255), 3: (255, 0, 0),
@@ -228,7 +227,7 @@ class Tracker:
 
         return output
 
-    def run_video(self, videofilepath, optional_box=None, debug=None, visdom_info=None, save_results=False):
+    def run_video(self, videofilepath, optional_box=None, debug=None, visdom_info=None, save_results=False, out_file: str = 'out.mp4'):
         """Run the tracker with the vieofile.
         args:
             debug: Debug level.
@@ -263,10 +262,19 @@ class Tracker:
         output_boxes = []
 
         cap = cv.VideoCapture(videofilepath)
+        video_out = cv.VideoWriter()
+
+        assert (video_out.open(
+            out_file,
+            cv.VideoWriter_fourcc('a', 'v', 'c', '1'),
+            1,
+            (int(cap.get(cv.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv.CAP_PROP_FRAME_HEIGHT)))
+        ))
+
         self._fps = int(cap.get(cv.CAP_PROP_FPS))
         display_name = 'Display: ' + tracker.params.tracker_name
         success, frame = self._frame_get_video(cap)
-        cv.imshow(display_name, frame)
+        video_out.write(frame)
 
         def _build_init_info(box):
             return {'init_bbox': OrderedDict({1: box}), 'init_object_ids': [1, ], 'object_ids': [1, ],
@@ -319,26 +327,10 @@ class Tracker:
                        font_color, 1)
 
             # Display the resulting frame
-            cv2_imshow(frame_disp)
-            key = cv.waitKey(1) & 0xFF
-            if key == ord('q'):
-                break
-            elif key == ord('r'):
-                ret, frame = cap.read()
-                frame_disp = frame.copy()
-
-                cv.putText(frame_disp, 'Select target ROI and press ENTER', (20, 30), cv.FONT_HERSHEY_COMPLEX_SMALL, 1.5,
-                           (0, 0, 0), 1)
-
-                cv2_imshow(frame_disp)
-                x, y, w, h = cv.selectROI(display_name, frame_disp, fromCenter=False)
-                init_state = [x, y, w, h]
-                tracker.initialize(frame, _build_init_info(init_state))
-                output_boxes.append(init_state)
+            video_out.write(frame_disp)
 
         # When everything done, release the capture
         cap.release()
-        cv.destroyAllWindows()
 
         if save_results:
             if not os.path.exists(self.results_dir):
