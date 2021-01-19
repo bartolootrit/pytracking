@@ -14,6 +14,7 @@ from ltr.data.bounding_box_utils import masks_to_bboxes
 from pytracking.evaluation.multi_object_wrapper import MultiObjectWrapper
 from pathlib import Path
 import torch
+from google.colab.patches import cv2_imshow
 
 
 _tracker_disp_colors = {1: (0, 255, 0), 2: (0, 0, 255), 3: (255, 0, 0),
@@ -318,7 +319,7 @@ class Tracker:
                        font_color, 1)
 
             # Display the resulting frame
-            cv.imshow(display_name, frame_disp)
+            cv2_imshow(frame_disp)
             key = cv.waitKey(1) & 0xFF
             if key == ord('q'):
                 break
@@ -329,7 +330,7 @@ class Tracker:
                 cv.putText(frame_disp, 'Select target ROI and press ENTER', (20, 30), cv.FONT_HERSHEY_COMPLEX_SMALL, 1.5,
                            (0, 0, 0), 1)
 
-                cv.imshow(display_name, frame_disp)
+                cv2_imshow(frame_disp)
                 x, y, w, h = cv.selectROI(display_name, frame_disp, fromCenter=False)
                 init_state = [x, y, w, h]
                 tracker.initialize(frame, _build_init_info(init_state))
